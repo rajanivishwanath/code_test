@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>PIAWE Report Generation</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <style>
+	   body {
+        font-family: Verdana,sans-serif;
+        font-size: 0.9em;
+    	}
+    
+	    header, footer {
+    	    padding: 10px;
+        	color: white;
+	        background-color: lightblue;
+    	}
+		table, th, td {
+   		 border: 1px solid black;
+		 width : 300px;
+		}
+		th, td {
+   			 padding: 5px;
+   			 text-align: left;
+		}
+		tr:nth-child(even) {background-color: #f2f2f2}
+
+    </style>
+	<script>
+      var empData = {"people":[{"name": "Ebony Boycott", "hourlyRate": 75.0030, "overtimeRate": 150.0000,"normalHours":35.0,"overtimeHours": 7.3, "injuryDate": "2016/05/01" },
+      {"name": "Geoff Rainford-Brent","hourlyRate": 30.1234, "overtimeRate": 60.3456, "normalHours": 25.0, "overtimeHours": 10.7, "injuryDate":"2016/08/04" },
+      {"name": "Meg Gillespie", "hourlyRate": 50.0000, "overtimeRate": 100.0000, "normalHours": 37.5,"overtimeHours": 0.0, "injuryDate": "2015/12/31" },
+      {"name": "Jason Lanning", "hourlyRate": 40.0055, "overtimeRate":90.9876, "normalHours": 40.0, "overtimeHours": 12.4, "injuryDate": "2013/01/01" }
+      ]};
+      var rulesData = {"rules": [
+          {"applicableWeeks": "1-26", "percentagePayable": 90, "overtimeIncluded": true},
+          {"applicableWeeks": "26-52", "percentagePayable": 80, "overtimeIncluded": true},
+          {"applicableWeeks": "53-79", "percentagePayable": 70, "overtimeIncluded": true},
+          {"applicableWeeks": "80-104", "percentagePayable": 60, "overtimeIncluded": false},
+          {"applicableWeeks": "104+", "percentagePayable": 10, "overtimeIncluded": false}
+      ]};
+      
+      var currentDate = new Date()
+      $(document).ready(function(){
+           $('#empDetail').hide();
+           $.each(empData.people,function(i, v){
+               $('#emp-name').append('<option value="'+v.name+'">'+v.name+'</option>');
+           });  
+       	$('#emp-name').on('change',function() {
+       	    $('#empDetail').empty();
+       	    var empName = $(this).val();
+       	   $.each(empData.people,function(i, v){
+       	   if(v.name == empName){
+       	   	 var normalRate = v.hourlyRate*v.normalHours;
+       		 var overTimeRate = v.overtimeRate*v.overtimeHours;
+             var injuredDate = new Date(v.injuryDate);
+             var weekDiff = Math.floor((currentDate - injuredDate + 1) / (1000 * 60 * 60 * 24) / 7);	
+       		$('#empDetail').append('<table style="width:100%"><tr><td>Employee Name</td><td>'+empName+'</td></tr><tr><td>Hourly Rate</td><td>'+v.hourlyRate+'</td></tr><tr><td>Date of Injury</td><td>'+v.injuryDate+'</td></tr><tr><td>Weeks Injured</td><td>'+weekDiff+'</td></tr></table>');
+       		var empTotalPayment = calculatePayement(normalRate,overTimeRate,weekDiff);
+       		$('#empDetail').append('<table style="width:100%"><tr><td>Final Payement</td><td>'+empTotalPayment+'</td></tr></table>');
+       	    $('#empDetail').show();
+       			
+              }	
+       	     
+       	  }); //end of empdata loop
+       
+       
+       }); // end of change
+       	
+       }); // end of ready
+
+    function calculatePayement(normalRate,overTimeRate,weekDiff){
+     var empTotalPayment;
+	 var splitRange;
+	 var minLimit;
+	 var maxLimit;
+     $.each(rulesData.rules,function(j, w){ 
+	     
+	               if(w.applicableWeeks.includes("-")){
+				   splitRange = w.applicableWeeks.split("-");
+				   minLimit = splitRange[0];
+				   maxLimit = splitRange[splitRange.length - 1];
+				   }
+    			   else{
+				   splitRange = w.applicableWeeks.split("+");
+				   minLimit = splitRange[0];
+				   maxLimit = 99999999999;
+				   } 
+    				var overtime = w.overtimeIncluded?'Yes':'No';
+    				if(weekDiff >= minLimit && weekDiff <=maxLimit){
+    				if(w.overtimeIncluded == "true"){
+    				   empTotalPayment = (normalRate + overTimeRate)*w.percentagePayable/100;
+    				 }
+    				 else{
+    				    empTotalPayment =  normalRate * w.percentagePayable/100;
+    				 }
+    				$('#empDetail').append('<table style="width:100%"><tr><td>Percentage Payable</td><td>'+w.percentagePayable+'</td></tr><tr><td>Overtime Included</td><td>'+overtime+'</td></tr></table>');
+    				}
+    			
+    			
+    			 });//end of rulesdata
+    			 
+    		 return empTotalPayment;
+    }
+
+</script>
+
+</head>
+<body>
+  <header>
+   <h1>Welcome to PIAWE Report Generation!!</h1>
+   </header>
+   <div>
+   <h3> Employee Payements</h3>
+	<select id="emp-name"><option value="none" selected="selected">Select Employee</select>
+    <div id="empDetail" style="margin-top:10px"></div>
+  </body>
+</html>
